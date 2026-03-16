@@ -1,0 +1,4 @@
+/target
+/venv
+*.json
+.DS_Store

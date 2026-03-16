@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Is Kate on her Mac</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --surface-2: #111111;
+    --surface-3: #1a1a1a;
+    --border: #1e1e1e;
+    --border-hover: #2a2a2a;
+    --green: #00C805;
+    --green-bg: rgba(0, 200, 5, 0.08);
+    --red: #ff5000;
+    --text: #ffffff;
+    --text-2: #c9c9c9;
+    --text-3: #737373;
+    --text-4: #404040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .topbar-logo {
+    width: 28px; height: 28px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .topbar-logo svg { width: 14px; height: 14px; }
+
+  .topbar-title { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,200,5,0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(0,200,5,0); }
+  }
+
+  .topbar-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-3);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .topbar-file {
+    font-size: 12px; color: var(--text-4);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 10px 32px 80px;
+  }
+
+  .hero {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-label { font-size: 13px; color: var(--text-3); margin-bottom: 8px; font-weight: 500; }
+
+  .hero-value {
+    font-size: 30px; font-weight: 700;
+    letter-spacing: -2px; line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .hero-sub { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+  .hero-sub .green { color: var(--green); }
+  .hero-sub .dim { color: var(--text-3); }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .metric {
+    background: var(--surface);
+    padding: 24px 28px;
+    transition: background 0.2s ease;
+  }
+
+  .metric:hover { background: var(--surface-2); }
+
+  .metric-label {
+    font-size: 12px; color: var(--text-3); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+  }
+
+  .metric-value {
+    font-size: 28px; font-weight: 700; letter-spacing: -1px;
+    color: var(--green); margin-bottom: 4px;
+  }
+
+  .metric-rate { font-size: 12px; color: var(--text-4); font-family: 'DM Mono', monospace; }
+
+  .section { margin-bottom: 32px; }
+
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .section-title { font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+  .section-badge {
+    font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-4);
+    background: var(--surface-2); padding: 2px 5px; border-radius: 2px;
+    border: 1px solid var(--border);
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s ease;
+  }
+
+  .chart-card:hover { border-color: var(--border-hover); }
+
+  .chart-wrap { position: relative; width: 100%; height: 300px; }
+  .chart-wrap.short { height: 240px; }
+
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .heatmap-container { overflow-x: auto; }
+
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 56px repeat(24, 1fr);
+    gap: 2px;
+    min-width: 600px;
+  }
+
+  .hm-header {
+    font-family: 'DM Mono', monospace; font-size: 9px;
+    color: var(--text-4); text-align: center; padding-bottom: 6px;
+  }
+
+  .hm-label {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-3);
+    display: flex; align-items: center; justify-content: flex-end; padding-right: 10px;
+  }
+
+  .hm-cell {
+    aspect-ratio: 1; border-radius: 3px;
+    background: var(--surface-2); min-height: 18px;
+    cursor: default; transition: transform 0.12s ease;
+    position: relative;
+  }
+
+  .hm-cell:hover { transform: scale(1.35); z-index: 5; }
+
+  .hm-cell[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-3); border: 1px solid var(--border);
+    color: var(--text); padding: 5px 10px; border-radius: 6px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    white-space: nowrap; z-index: 20; pointer-events: none;
+  }
+
+  .feed-head {
+    display: grid; grid-template-columns: 120px repeat(3, 1fr);
+    gap: 16px; padding: 8px 14px 12px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--text-4);
+    border-bottom: 1px solid var(--border); margin-bottom: 4px;
+  }
+
+  .feed-scroll {
+    max-height: 300px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent;
+  }
+
+  .feed-row {
+    display: grid; grid-template-columns: 120px repeat(3, 1fr);
+    gap: 16px; padding: 10px 14px; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    transition: background 0.12s ease;
+  }
+
+  .feed-row:hover { background: var(--surface-2); }
+  .feed-ts { color: var(--text-4); }
+  .feed-clicks { color: var(--green); }
+  .feed-keys { color: var(--text-2); }
+  .feed-mouse { color: var(--text-3); }
+
+  .loading-state { text-align: center; padding: 120px 20px; }
+
+  .loading-spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--surface-3);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state p { color: var(--text-3); font-size: 14px; }
+  .error-msg { color: var(--red); font-size: 13px; text-align: center; padding: 40px; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .anim { animation: fadeIn 0.35s ease both; }
+
+  @media (max-width: 700px) {
+    .metrics { grid-template-columns: 1fr; }
+    .chart-row { grid-template-columns: 1fr; }
+    .hero-value { font-size: 40px; }
+    .main { padding: 24px 16px 60px; }
+    .topbar { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+        <polyline points="4,18 8,10 12,14 16,6 20,12"/>
+      </svg>
+    </div>
+    <span class="topbar-title">Is Kate on her Mac</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-file" id="fileLabel">connecting...</span>
+    <div class="topbar-status">
+      <div class="live-dot"></div>
+      <span>Live</span>
+    </div>
+  </div>
+</div>
+
+<div class="main" id="app">
+  <div class="loading-state" id="loadingState">
+    <div class="loading-spinner"></div>
+    <p>Loading activity data...</p>
+  </div>
+</div>
+
+<script>
+let charts = {};
+
+async function fetchData() {
+  try {
+    const res = await fetch('/api/data');
+    if (!res.ok) throw new Error('No data');
+    return await res.json();
+  } catch { return null; }
+}
+
+async function init() {
+  const payload = await fetchData();
+  const app = document.getElementById('app');
+
+  if (!payload || !payload.entries.length) {
+    app.innerHTML = '<div class="loading-state"><p class="error-msg">No activity data found. Start the tracker and check back.</p></div>';
+    document.getElementById('fileLabel').textContent = 'no data';
+    setTimeout(init, 10000);
+    return;
+  }
+
+  document.getElementById('fileLabel').textContent = payload.filename;
+  render(payload.entries);
+
+  setInterval(async () => {
+    const fresh = await fetchData();
+    if (fresh && fresh.entries.length) {
+      document.getElementById('fileLabel').textContent = fresh.filename;
+      render(fresh.entries);
+    }
+  }, 30000);
+}
+
+function render(raw) {
+  const data = raw.map(d => ({ ...d, _t: new Date(d.timestamp) })).sort((a, b) => a._t - b._t);
+  const totC = data.reduce((s, d) => s + d.left_clicks, 0);
+  const totK = data.reduce((s, d) => s + d.keypresses, 0);
+  const totM = data.reduce((s, d) => s + d.mouse_movements, 0);
+  const totAll = totC + totK + totM;
+  const spanMin = Math.max(1, Math.round((data[data.length-1]._t - data[0]._t) / 60000));
+  const spanLbl = spanMin >= 60 ? (spanMin/60).toFixed(1)+'h' : spanMin+'min';
+
+  document.getElementById('app').innerHTML = `
+    <div class="hero anim">
+      <div class="hero-label">Total Events Tracked</div>
+      <div class="hero-value">${totAll.toLocaleString()}</div>
+      <div class="hero-sub">
+        <span class="green">${(totAll/spanMin).toFixed(0)} events/min</span>
+        <span class="dim">over ${spanLbl}</span>
+      </div>
+    </div>
+    <div class="section anim" style="animation-delay:0.18s">
+      
+        <div>
+          <div class="section-header">
+            <span class="section-title">Input Rate</span>
+            <span class="section-badge">events/min</span>
+          </div>
+          <div class="chart-card"><div class="chart-wrap"><canvas id="rateChart"></canvas></div></div>
+        </div>
+      
+    </div>
+
+    <div class="section anim" style="animation-delay:0.12s">
+      <div class="section-header">
+        <span class="section-title">Proportions of I/Os</span>
+        <span class="section-badge">${data.length} batches</span>
+      </div>
+      <div class="chart-card"><div class="chart-wrap"><canvas id="timelineChart"></canvas></div></div>
+    </div>
+    
+    <div class="section anim" style="animation-delay:0.24s">
+      <div class="section-header"><span class="section-title">Hourly Heatmap</span></div>
+      <div class="chart-card"><div class="heatmap-container"><div class="heatmap-grid" id="heatmap"></div></div></div>
+    </div>
+    <div class="section anim" style="animation-delay:0.3s">
+      <div class="section-header">
+        <span class="section-title">Event Log</span>
+        <span class="section-badge">last 100</span>
+      </div>
+      <div class="chart-card" style="padding:16px 10px;">
+        <div class="feed-head"><span>Time</span><span>Clicks</span><span>Keys</span><span>Mouse</span></div>
+        <div class="feed-scroll" id="feed"></div>
+      </div>
+    </div>`;
+
+  buildTimeline(data);
+  buildDoughnut(totC, totK, totM);
+  buildRate(data);
+  buildHeatmap(data);
+  buildFeed(data);
+}
+
+const CF = { family: "'DM Mono', monospace", size: 10 };
+const TT = {
+  backgroundColor:'#1a1a1a', titleColor:'#fff', bodyColor:'#999',
+  borderColor:'#2a2a2a', borderWidth:1, cornerRadius:8,
+  titleFont:{family:"'DM Mono',monospace",size:11},
+  bodyFont:{family:"'DM Mono',monospace",size:11},
+  padding:10, displayColors:true, boxPadding:4
+};
+const GR = { color:'rgba(255,255,255,0.04)', drawBorder:false };
+const TK = { color:'#404040', font:CF };
+
+function bkt(data, n) {
+  const c = Math.min(data.length, n), sz = Math.ceil(data.length/c), out = [];
+  for (let i=0; i<data.length; i+=sz) {
+    const sl = data.slice(i, i+sz);
+    out.push({
+      label: sl[Math.floor(sl.length/2)]._t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      clicks: sl.reduce((s,d)=>s+d.left_clicks,0),
+      keys: sl.reduce((s,d)=>s+d.keypresses,0),
+      mouse: sl.reduce((s,d)=>s+d.mouse_movements,0),
+    });
+  }
+  return out;
+}
+
+function buildTimeline(data) {
+  if(charts.tl) charts.tl.destroy();
+  const b = bkt(data, 50);
+  charts.tl = new Chart(document.getElementById('timelineChart'),{
+    type:'bar',
+    data:{
+      labels: b.map(x=>x.label),
+      datasets:[
+        {label:'Clicks', data:b.map(x=>x.clicks), backgroundColor:'#00C805', borderRadius:2, borderSkipped:false},
+        {label:'Keypresses', data:b.map(x=>x.keys), backgroundColor:'rgba(255,255,255,0.5)', borderRadius:2, borderSkipped:false},
+        {label:'Mouse', data:b.map(x=>x.mouse), backgroundColor:'rgba(255,255,255,0.12)', borderRadius:2, borderSkipped:false},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#737373',font:CF,boxWidth:10,padding:16}},tooltip:TT},
+      scales:{
+        x:{stacked:true, ticks:TK, grid:GR, border:{color:'transparent'}},
+        y:{stacked:true, ticks:TK, grid:GR, border:{color:'transparent'}},
+      }
+    }
+  });
+}
+
+function buildDoughnut(c,k,m) {
+  if(charts.dg) charts.dg.destroy();
+  charts.dg = new Chart(document.getElementById('doughnutChart'),{
+    type:'doughnut',
+    data:{
+      labels:['Clicks','Keypresses','Mouse'],
+      datasets:[{
+        data:[c,k,m],
+        backgroundColor:['#00C805','rgba(255,255,255,0.55)','rgba(255,255,255,0.15)'],
+        borderColor:'#0a0a0a', borderWidth:3, hoverOffset:6,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'70%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#737373',font:CF,boxWidth:10,padding:16}},
+        tooltip:{...TT, callbacks:{
+          label:ctx=>{
+            const t=ctx.dataset.data.reduce((a,b)=>a+b,0);
+            return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${((ctx.parsed/t)*100).toFixed(1)}%)`;
+          }
+        }},
+      }
+    }
+  });
+}
+
+function buildRate(data) {
+  if(charts.rt) charts.rt.destroy();
+  const rates=[];
+  for(let i=1;i<data.length;i++){
+    const dt=(data[i]._t-data[i-1]._t)/60000;
+    if(dt<=0) continue;
+    const ev=data[i].left_clicks+data[i].keypresses+data[i].mouse_movements;
+    rates.push({label:data[i]._t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), rate:ev/dt});
+  }
+  const step=Math.max(1,Math.floor(rates.length/50));
+  const s=rates.filter((_,i)=>i%step===0);
+  charts.rt = new Chart(document.getElementById('rateChart'),{
+    type:'line',
+    data:{
+      labels:s.map(r=>r.label),
+      datasets:[{
+        data:s.map(r=>+r.rate.toFixed(1)),
+        borderColor:'#00C805', backgroundColor:'rgba(0,200,5,0.06)',
+        fill:true, tension:0.3, pointRadius:0,
+        pointHoverRadius:4, pointHoverBackgroundColor:'#00C805', borderWidth:2,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TT},
+      scales:{
+        x:{ticks:{...TK,maxTicksLimit:6},grid:GR,border:{color:'transparent'}},
+        y:{ticks:TK,grid:GR,border:{color:'transparent'}},
+      }
+    }
+  });
+}
+
+function buildHeatmap(data) {
+  const el=document.getElementById('heatmap');
+  el.innerHTML='';
+  const map={};
+  data.forEach(d=>{
+    const dk=d._t.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const h=d._t.getHours();
+    map[dk+'|'+h]=(map[dk+'|'+h]||0)+d.left_clicks+d.keypresses+d.mouse_movements;
+  });
+  const days=[...new Set(data.map(d=>d._t.toLocaleDateString('en-US',{month:'short',day:'numeric'})))];
+  const mx=Math.max(1,...Object.values(map));
+  el.appendChild(document.createElement('div'));
+  for(let h=0;h<24;h++){
+    const hd=document.createElement('div');
+    hd.className='hm-header';
+    hd.textContent=String(h).padStart(2,'0');
+    el.appendChild(hd);
+  }
+  days.forEach(day=>{
+    const lb=document.createElement('div');
+    lb.className='hm-label'; lb.textContent=day;
+    el.appendChild(lb);
+    for(let h=0;h<24;h++){
+      const v=map[day+'|'+h]||0;
+      const cell=document.createElement('div');
+      cell.className='hm-cell';
+      cell.setAttribute('data-tip',`${day} ${h}:00 — ${v} events`);
+      if(v>0){
+        const intensity=v/mx;
+        cell.style.backgroundColor=`rgba(0,200,5,${0.1+intensity*0.8})`;
+        if(intensity>0.7) cell.style.boxShadow=`0 0 6px rgba(0,200,5,${intensity*0.3})`;
+      }
+      el.appendChild(cell);
+    }
+  });
+}
+
+function buildFeed(data) {
+  document.getElementById('feed').innerHTML = data.slice(-100).reverse().map(d=>`
+    <div class="feed-row">
+      <span class="feed-ts">${d._t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>
+      <span class="feed-clicks">${d.left_clicks}</span>
+      <span class="feed-keys">${d.keypresses}</span>
+      <span class="feed-mouse">${d.mouse_movements}</span>
+    </div>`).join('');
+}
+
+init();
+</script>
+</body>
+</html>
