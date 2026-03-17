@@ -352,8 +352,11 @@ function render(raw) {
         <span class="dim">over ${spanLbl}</span>
       </div>
     </div>
+    <div class="section anim" style="animation-delay:0.24s">
+      <div class="section-header"><span class="section-title">Hourly Heatmap</span></div>
+      <div class="chart-card"><div class="heatmap-container"><div class="heatmap-grid" id="heatmap"></div></div></div>
+    </div>
     <div class="section anim" style="animation-delay:0.18s">
-      
         <div>
           <div class="section-header">
             <span class="section-title">Input Rate</span>
@@ -361,9 +364,8 @@ function render(raw) {
           </div>
           <div class="chart-card"><div class="chart-wrap"><canvas id="rateChart"></canvas></div></div>
         </div>
-      
-    </div>
 
+    </div>
     <div class="section anim" style="animation-delay:0.12s">
       <div class="section-header">
         <span class="section-title">Proportions of I/Os</span>
@@ -372,10 +374,7 @@ function render(raw) {
       <div class="chart-card"><div class="chart-wrap"><canvas id="timelineChart"></canvas></div></div>
     </div>
     
-    <div class="section anim" style="animation-delay:0.24s">
-      <div class="section-header"><span class="section-title">Hourly Heatmap</span></div>
-      <div class="chart-card"><div class="heatmap-container"><div class="heatmap-grid" id="heatmap"></div></div></div>
-    </div>
+
     <div class="section anim" style="animation-delay:0.3s">
       <div class="section-header">
         <span class="section-title">Event Log</span>
@@ -388,7 +387,6 @@ function render(raw) {
     </div>`;
 
   buildTimeline(data);
-  buildDoughnut(totC, totK, totM);
   buildRate(data);
   buildHeatmap(data);
   buildFeed(data);
@@ -444,50 +442,31 @@ function buildTimeline(data) {
   });
 }
 
-function buildDoughnut(c,k,m) {
-  if(charts.dg) charts.dg.destroy();
-  charts.dg = new Chart(document.getElementById('doughnutChart'),{
-    type:'doughnut',
-    data:{
-      labels:['Clicks','Keypresses','Mouse'],
-      datasets:[{
-        data:[c,k,m],
-        backgroundColor:['#00C805','rgba(255,255,255,0.55)','rgba(255,255,255,0.15)'],
-        borderColor:'#0a0a0a', borderWidth:3, hoverOffset:6,
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false, cutout:'70%',
-      plugins:{
-        legend:{position:'bottom',labels:{color:'#737373',font:CF,boxWidth:10,padding:16}},
-        tooltip:{...TT, callbacks:{
-          label:ctx=>{
-            const t=ctx.dataset.data.reduce((a,b)=>a+b,0);
-            return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${((ctx.parsed/t)*100).toFixed(1)}%)`;
-          }
-        }},
-      }
-    }
-  });
-}
-
 function buildRate(data) {
   if(charts.rt) charts.rt.destroy();
-  const rates=[];
+  // Compute per-interval rates and bucket by hour
+  const hourSums = new Array(24).fill(0);
+  const hourCounts = new Array(24).fill(0);
   for(let i=1;i<data.length;i++){
     const dt=(data[i]._t-data[i-1]._t)/60000;
     if(dt<=0) continue;
     const ev=data[i].left_clicks+data[i].keypresses+data[i].mouse_movements;
-    rates.push({label:data[i]._t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), rate:ev/dt});
+    const h=data[i]._t.getHours();
+    hourSums[h]+=ev/dt;
+    hourCounts[h]++;
   }
-  const step=Math.max(1,Math.floor(rates.length/50));
-  const s=rates.filter((_,i)=>i%step===0);
+  const labels=[];
+  const values=[];
+  for(let h=0;h<24;h++){
+    labels.push(String(h).padStart(2,'0')+':00');
+    values.push(hourCounts[h]>0 ? +(hourSums[h]/hourCounts[h]).toFixed(1) : 0);
+  }
   charts.rt = new Chart(document.getElementById('rateChart'),{
     type:'line',
     data:{
-      labels:s.map(r=>r.label),
+      labels,
       datasets:[{
-        data:s.map(r=>+r.rate.toFixed(1)),
+        data:values,
         borderColor:'#00C805', backgroundColor:'rgba(0,200,5,0.06)',
         fill:true, tension:0.3, pointRadius:0,
         pointHoverRadius:4, pointHoverBackgroundColor:'#00C805', borderWidth:2,
