@@ -13,7 +13,7 @@ import glob
 import sys
 
 DATA_DIR = os.path.expanduser(
-    "~/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/mac_activity_tracker-2/activity_data"
+    "activity_data"
 )
 PORT = 8050
 DASHBOARD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.html")
