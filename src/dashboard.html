@@ -362,38 +362,13 @@ function render(raw) {
       <div class="section-header"><span class="section-title">Hourly Heatmap</span></div>
       <div class="chart-card"><div class="heatmap-container"><div class="heatmap-grid" id="heatmap"></div></div></div>
     </div>
-    <div class="section anim" style="animation-delay:0.18s">
-        <div>
-          <div class="section-header">
-            <span class="section-title">Input Rate</span>
-            <span class="section-badge">events/min</span>
-          </div>
-          <div class="chart-card"><div class="chart-wrap"><canvas id="rateChart"></canvas></div></div>
-        </div>
 
-    </div>
-    <div class="section anim" style="animation-delay:0.12s">
-      <div class="section-header">
-        <span class="section-title">Proportions of I/Os</span>
-        <span class="section-badge">${data.length} batches</span>
-      </div>
-      <div class="chart-card"><div class="chart-wrap"><canvas id="timelineChart"></canvas></div></div>
-    </div>
     
 
     <div class="section anim" style="animation-delay:0.3s">
-      <div class="section-header">
-        <span class="section-title">Event Log</span>
-        <span class="section-badge">last 100</span>
-      </div>
-      <div class="chart-card" style="padding:16px 10px;">
-        <div class="feed-head"><span>Time</span><span>Clicks</span><span>Keys</span><span>Mouse</span></div>
-        <div class="feed-scroll" id="feed"></div>
-      </div>
     </div>`;
 
   buildTimeline(data);
-  buildRate(data);
   buildHeatmap(data);
   buildFeed(data);
 }
@@ -447,48 +422,6 @@ function buildTimeline(data) {
     }
   });
 }
-
-function buildRate(data) {
-  if(charts.rt) charts.rt.destroy();
-  // Compute per-interval rates and bucket by hour
-  const hourSums = new Array(24).fill(0);
-  const hourCounts = new Array(24).fill(0);
-  for(let i=1;i<data.length;i++){
-    const dt=(data[i]._t-data[i-1]._t)/60000;
-    if(dt<=0) continue;
-    const ev=data[i].left_clicks+data[i].keypresses+data[i].mouse_movements;
-    const h=data[i]._t.getHours();
-    hourSums[h]+=ev/dt;
-    hourCounts[h]++;
-  }
-  const labels=[];
-  const values=[];
-  for(let h=0;h<24;h++){
-    labels.push(String(h).padStart(2,'0')+':00');
-    values.push(hourCounts[h]>0 ? +(hourSums[h]/hourCounts[h]).toFixed(1) : 0);
-  }
-  charts.rt = new Chart(document.getElementById('rateChart'),{
-    type:'line',
-    data:{
-      labels,
-      datasets:[{
-        data:values,
-        borderColor:'#00C805', backgroundColor:'rgba(0,200,5,0.06)',
-        fill:true, tension:0.3, pointRadius:0,
-        pointHoverRadius:4, pointHoverBackgroundColor:'#00C805', borderWidth:2,
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:TT},
-      scales:{
-        x:{ticks:{...TK,maxTicksLimit:6},grid:GR,border:{color:'transparent'}},
-        y:{ticks:TK,grid:GR,border:{color:'transparent'}},
-      }
-    }
-  });
-}
-
 function buildHeatmap(data) {
   const el=document.getElementById('heatmap');
   el.innerHTML='';
