@@ -133,7 +133,7 @@
 
   .heatmap-grid {
     display: grid;
-    grid-template-columns: 56px repeat(24, 1fr);
+    grid-template-columns: 90px repeat(24, 1fr);
     gap: 2px;
     min-width: 600px;
   }
@@ -267,7 +267,6 @@ async function init() {
 
 function render(raw) {
   const data = raw.map(d => ({ ...d, _t: new Date(d.timestamp) })).sort((a, b) => a._t - b._t);
-
   let totC = 0, totK = 0, totM = 0;
   for (const d of data) { totC += d.left_clicks; totK += d.keypresses; totM += d.mouse_movements; }
   const totAll = totC + totK + totM;
@@ -298,7 +297,8 @@ function buildHeatmap(data) {
   const daySet = new Set();
 
   data.forEach(d => {
-    const dk = d._t.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    const dk = d._t.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+    //console.log(dk);
     const h = d._t.getHours();
     map[dk+'|'+h] = (map[dk+'|'+h]||0) + d.left_clicks + d.keypresses + d.mouse_movements;
     daySet.add(dk);

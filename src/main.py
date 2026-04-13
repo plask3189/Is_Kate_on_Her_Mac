@@ -63,7 +63,6 @@ if not os.path.exists(save_dir):
 filename = os.path.join(save_dir, f"activity_data.json")
 print(filename)
 
-
 mouse_listener = mouse.Listener(on_click=on_click, on_move=on_move)
 key_listener = keyboard.Listener(on_press=on_press)
 
