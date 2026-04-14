@@ -11,5 +11,6 @@ python3 src/server.py src/dashboard.html
 Also this is mostly vibe coded
 
 ## To Do:
-- Summary panel with average hours with activity per day
-- 
+- Summary panel with average hours with activity per weekday
+- Most likely start time
+- Most likey end time

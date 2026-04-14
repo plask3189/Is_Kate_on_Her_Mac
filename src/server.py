@@ -15,7 +15,7 @@ import sys
 DATA_DIR = os.path.expanduser(
     "activity_data"
 )
-PORT = 8050
+PORT = 8051
 DASHBOARD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.html")
 print(DASHBOARD_PATH)
 
@@ -50,8 +50,22 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_data()
         elif self.path == "/api/files":
             self.serve_file_list()
+        elif self.path == "/styles.css":
+            self.serve_static("styles.css", "text/css")
         else:
             self.send_error(404)
+
+    def serve_static(self, filename, content_type):
+        filepath = os.path.join(os.path.dirname(DASHBOARD_PATH), filename)
+        if not os.path.isfile(filepath):
+            self.send_error(404)
+            return
+        with open(filepath, "r") as f:
+            content = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.end_headers()
+        self.wfile.write(content.encode())
 
     def serve_dashboard(self):
         with open(DASHBOARD_PATH, "r") as f:
