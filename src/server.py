@@ -52,6 +52,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_file_list()
         elif self.path == "/styles.css":
             self.serve_static("styles.css", "text/css")
+        elif self.path == "/dashboard.js":
+            self.serve_static("dashboard.js", "application/javascript")
         else:
             self.send_error(404)
 

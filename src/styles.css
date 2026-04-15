@@ -121,6 +121,35 @@
 
   .chart-card:hover { border-color: var(--border-hover); }
 
+  .weekday-bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    height: 200px;
+    align-items: end;
+  }
+  .wb-col { display: flex; flex-direction: column; align-items: center; height: 100%; gap: 8px; }
+  .wb-bar-wrap {
+    flex: 1; width: 100%;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    align-items: center; position: relative;
+  }
+  .wb-bar {
+    width: 100%;
+    background: linear-gradient(180deg, var(--green), rgba(0,200,5,0.45));
+    border-radius: 6px 6px 0 0;
+    min-height: 2px;
+    transition: height 0.4s ease;
+  }
+  .wb-value {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--text-2); margin-bottom: 4px;
+  }
+  .wb-label {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--text-3);
+  }
+
   .heatmap-container { overflow-x: auto; }
 
   .heatmap-grid {
