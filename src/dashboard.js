@@ -56,7 +56,7 @@ function render(raw) {
 
   document.getElementById('app').innerHTML = `
     <div class="hero anim">
-      <div class="hero-label">Average Active Hours</div>
+      <div class="hero-label">Overall Average Active Hours</div>
       <div class="hero-value">${avgHoursPerDay} hrs/day</div> 
       <div class="hero-sub">
         <span class="green">${(totAll/spanMin).toFixed(0)} events/min</span>

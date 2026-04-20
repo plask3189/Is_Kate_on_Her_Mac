@@ -11,6 +11,6 @@ python3 src/server.py src/dashboard.html
 Also this is mostly vibe coded
 
 ## To Do:
-- Bar plot with each day of the week as the x axis and average number of active hours as y axis
+- make heatmap and barplot side by side. probably will need to flip the barplot axes.
 - Most likely start time
 - Most likey end time
