@@ -36,6 +36,7 @@ async function init() {
 
 function render(raw) {
   const data = raw.map(d => ({ ...d, _t: new Date(d.timestamp) })).sort((a, b) => a._t - b._t);
+  console.log(data)
   let totC = 0, totK = 0, totM = 0;
   for (const d of data) { totC += d.left_clicks; totK += d.keypresses; totM += d.mouse_movements; }
   const totAll = totC + totK + totM;
@@ -50,17 +51,36 @@ function render(raw) {
   const dayKeys = Object.keys(dayHours);
   const totalActiveHours = dayKeys.reduce((sum, dk) => sum + dayHours[dk].size, 0);
   const avgHoursPerDay = dayKeys.length ? (totalActiveHours / dayKeys.length).toFixed(1) : '0';
-
   const spanMin = Math.max(1, Math.round((data[data.length-1]._t - data[0]._t) / 60000));
   const spanLbl = spanMin >= 60 ? (spanMin/60).toFixed(1)+'h' : spanMin+'min';
 
+  // Total active hours for the previous 5 full weekdays (Mon–Fri)
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const prev5Weekdays = [];
+  const cursor = new Date(today); cursor.setDate(cursor.getDate() - 1);
+  while (prev5Weekdays.length < 5) {
+    const wd = cursor.getDay();
+    if (wd !== 0 && wd !== 6) prev5Weekdays.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  const prev5TotalHours = prev5Weekdays.reduce((sum, dk) => sum + (dayHours[dk] ? dayHours[dk].size : 0), 0);
+
   document.getElementById('app').innerHTML = `
-    <div class="hero anim">
-      <div class="hero-label">Overall Average Active Hours</div>
-      <div class="hero-value">${avgHoursPerDay} hrs/day</div> 
-      <div class="hero-sub">
-        <span class="green">${(totAll/spanMin).toFixed(0)} events/min</span>
-        <span class="dim">over ${spanLbl}</span>
+    <div class="hero-row anim">
+      <div class="hero">
+        <div class="hero-label">Overall Average Active Hours</div>
+        <div class="hero-value">${avgHoursPerDay} hrs/day</div>
+        <div class="hero-sub">
+          <span class="green">${(totAll/spanMin).toFixed(0)} events/min</span>
+          <span class="dim">over ${spanLbl}</span>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-label">Last 5 Weekdays — Total Active Hours</div>
+        <div class="hero-value">${prev5TotalHours} hrs</div>
+        <div class="hero-sub">
+          <span class="dim">${prev5Weekdays[prev5Weekdays.length-1]} – ${prev5Weekdays[0]}</span>
+        </div>
       </div>
     </div>
 

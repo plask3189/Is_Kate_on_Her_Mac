@@ -11,6 +11,7 @@ python3 src/server.py src/dashboard.html
 Also this is mostly vibe coded
 
 ## To Do:
-- make heatmap and barplot side by side. probably will need to flip the barplot axes.
+- Make heatmap and barplot side by side. probably will need to flip the barplot axes.
 - Most likely start time
 - Most likey end time
+- Account for missed days for barplot stats
