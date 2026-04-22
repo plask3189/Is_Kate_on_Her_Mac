@@ -86,7 +86,7 @@ function render(raw) {
 
     <div class="section anim" style="animation-delay:0.24s">
       <div class="section-header"><span class="section-title">Hourly Heatmap</span></div>
-      <div class="chart-card"><div class="heatmap-container"><div class="heatmap-grid" id="heatmap"></div></div></div>
+      <div class="chart-card heatmap-card"><div class="heatmap-container"><div class="heatmap-grid" id="heatmap"></div></div></div>
     </div>
         <div class="section anim" style="animation-delay:0.18s">
         <div class="section-header"><span class="section-title">Average Active Hours by Day of Week</span></div>
@@ -146,7 +146,12 @@ function buildHeatmap(data) {
     daySet.add(dk);
   });
 
-  const days = [...daySet];
+  const dayDate = {};
+  data.forEach(d => {
+    const dk = d._t.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+    if (!dayDate[dk]) dayDate[dk] = d._t;
+  });
+  const days = [...daySet].sort((a, b) => dayDate[b] - dayDate[a]);
   const mx = Math.max(1, ...Object.values(map));
 
   const frag = document.createDocumentFragment();
@@ -158,7 +163,11 @@ function buildHeatmap(data) {
     frag.appendChild(hd);
   }
 
-  days.forEach(day => {
+  days.forEach((day, i) => {
+    const age = days.length > 1 ? i / (days.length - 1) : 0;
+    const r = Math.round(0 + age * 30);
+    const g = Math.round(200 - age * 140);
+    const b = Math.round(5 + age * 215);
     const lb = document.createElement('div');
     lb.className = 'hm-label'; lb.textContent = day;
     frag.appendChild(lb);
@@ -169,8 +178,8 @@ function buildHeatmap(data) {
       cell.setAttribute('data-tip', `${day} ${h}:00 — ${v} events`);
       if (v > 0) {
         const intensity = v / mx;
-        cell.style.backgroundColor = `rgba(0,200,5,${0.1+intensity*0.8})`;
-        if (intensity > 0.7) cell.style.boxShadow = `0 0 6px rgba(0,200,5,${intensity*0.3})`;
+        cell.style.backgroundColor = `rgba(${r},${g},${b},${0.1+intensity*0.8})`;
+        if (intensity > 0.7) cell.style.boxShadow = `0 0 6px rgba(${r},${g},${b},${intensity*0.3})`;
       }
       frag.appendChild(cell);
     }

@@ -158,19 +158,25 @@
 
   .heatmap-card {
     height: calc(100vh - 280px);
-    min-height: 200px;
+    /* min-height: 200px; */
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
-  .heatmap-container { width: 100%; flex: 1; min-height: 0; }
+  .heatmap-container { 
+    width: 100%; 
+    flex: 1; 
+    min-height: 0; 
+    overflow: hidden;}
 
   .heatmap-grid {
     display: grid;
-    grid-template-columns: minmax(60px, 90px) repeat(24, 1fr);
+    grid-template-columns: minmax(60px, 90px) repeat(24, 1fr); 
     gap: 2px;
     width: 100%;
     height: 100%;
+    overflow: hidden;
   }
 
   .hm-header {
@@ -184,7 +190,6 @@
   }
 
   .hm-cell {
-    aspect-ratio: 1;
     border-radius: 3px;
     background: var(--surface-2);
     cursor: default; transition: transform 0.12s ease;

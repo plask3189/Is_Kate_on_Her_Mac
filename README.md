@@ -16,4 +16,4 @@ Also this is mostly vibe coded
 - Most likey end time
 - Account for missed days for barplot stats
 - Adjust heatmap view so it always compresses within the window size 
-- Make heatmap most recent to oldest
+- only keep the old necessary data.

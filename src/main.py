@@ -35,7 +35,7 @@ def save_data():
 def check_save():
     global event_count
     event_count += 1
-    if event_count >= 500:
+    if event_count >= 1000:
         save_data()
         event_count = 0
 
