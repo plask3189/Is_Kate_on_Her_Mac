@@ -64,12 +64,13 @@ function render(raw) {
     cursor.setDate(cursor.getDate() - 1);
   }
   const prev5TotalHours = prev5Weekdays.reduce((sum, dk) => sum + (dayHours[dk] ? dayHours[dk].size : 0), 0);
+  const avgHoursPerWeekday = (prev5TotalHours / 5).toFixed(1);
 
   document.getElementById('app').innerHTML = `
     <div class="hero-row anim">
       <div class="hero">
-        <div class="hero-label">Overall Average Active Hours</div>
-        <div class="hero-value">${avgHoursPerDay} hrs/day</div>
+        <div class="hero-label"> Average Active Hours on Weekdays </div>
+        <div class="hero-value">${avgHoursPerWeekday} hrs/day</div>
         <div class="hero-sub">
           <span class="green">${(totAll/spanMin).toFixed(0)} events/min</span>
           <span class="dim">over ${spanLbl}</span>
