@@ -108,6 +108,32 @@
   .hero-sub .green { color: var(--green); }
   .hero-sub .dim { color: var(--text-3); }
 
+  .median-starts {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+  }
+
+  .ms-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ms-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .ms-day {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+  }
+
   .section { margin-bottom: 32px; }
 
   .section-header {

@@ -54,6 +54,34 @@ function render(raw) {
   const spanMin = Math.max(1, Math.round((data[data.length-1]._t - data[0]._t) / 60000));
   const spanLbl = spanMin >= 60 ? (spanMin/60).toFixed(1)+'h' : spanMin+'min';
 
+  // Median start time per weekday (Mon–Fri)
+  const perDateMed = {};
+  for (const d of data) {
+    const dk = d._t.toISOString().slice(0, 10);
+    if (!perDateMed[dk]) perDateMed[dk] = { wd: d._t.getDay(), hours: new Set() };
+    if (d.left_clicks + d.keypresses + d.mouse_movements > 0) perDateMed[dk].hours.add(d._t.getHours());
+  }
+  const startsByWd = [[], [], [], [], [], [], []];
+  for (const { wd, hours } of Object.values(perDateMed)) {
+    if (hours.size > 0) startsByWd[wd].push(Math.min(...hours));
+  }
+  function medianOf(arr) {
+    if (!arr.length) return null;
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+  }
+  function fmtHour(h) {
+    if (h === null) return '—';
+    const hr = Math.floor(h);
+    const mins = Math.round((h % 1) * 60);
+    const ampm = hr >= 12 ? 'pm' : 'am';
+    const h12 = hr % 12 || 12;
+    return mins > 0 ? `${h12}:${String(mins).padStart(2,'0')}${ampm}` : `${h12}${ampm}`;
+  }
+  const wdNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const medianStarts = [1,2,3,4,5].map(wd => fmtHour(medianOf(startsByWd[wd])));
+
   // Total active hours for the previous 5 full weekdays (Mon–Fri)
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const prev5Weekdays = [];
@@ -81,6 +109,16 @@ function render(raw) {
         <div class="hero-value">${prev5TotalHours} hrs</div>
         <div class="hero-sub">
           <span class="dim">${prev5Weekdays[prev5Weekdays.length-1]} – ${prev5Weekdays[0]}</span>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-label">Median Start Time by Weekday</div>
+        <div class="median-starts">
+          ${wdNames.map((lb, i) => `
+            <div class="ms-item">
+              <div class="ms-time">${medianStarts[i]}</div>
+              <div class="ms-day">${lb}</div>
+            </div>`).join('')}
         </div>
       </div>
     </div>
