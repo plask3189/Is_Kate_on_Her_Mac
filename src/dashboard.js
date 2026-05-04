@@ -178,6 +178,7 @@ function buildHeatmap(data) {
   const daySet = new Set();
 
   data.forEach(d => {
+    if (d._t.getDay() === 0 || d._t.getDay() === 6) return; // skip Sat (6) & Sun (0)
     const dk = d._t.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
     //console.log(dk);
     const h = d._t.getHours();
