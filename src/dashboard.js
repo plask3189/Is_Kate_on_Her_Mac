@@ -38,15 +38,15 @@ function render(raw) {
   const data = raw.map(d => ({ ...d, _t: new Date(d.timestamp) })).sort((a, b) => a._t - b._t);
   console.log(data)
   let totC = 0, totK = 0, totM = 0;
-  for (const d of data) { totC += d.left_clicks; totK += d.keypresses; totM += d.mouse_movements; }
-  const totAll = totC + totK + totM;
+  for (const d of data) {totM += d.mouse_movements; }
+  const totAll = totM;
 
   // Average active hours per day
   const dayHours = {};
   for (const d of data) {
     const dk = d._t.toISOString().slice(0, 10);
     if (!dayHours[dk]) dayHours[dk] = new Set();
-    if (d.left_clicks + d.keypresses + d.mouse_movements > 0) dayHours[dk].add(d._t.getHours());
+    if (d.mouse_movements > 0) dayHours[dk].add(d._t.getHours());
   }
   const dayKeys = Object.keys(dayHours);
   const totalActiveHours = dayKeys.reduce((sum, dk) => sum + dayHours[dk].size, 0);
@@ -59,7 +59,7 @@ function render(raw) {
   for (const d of data) {
     const dk = d._t.toISOString().slice(0, 10);
     if (!perDateMed[dk]) perDateMed[dk] = { wd: d._t.getDay(), hours: new Set() };
-    if (d.left_clicks + d.keypresses + d.mouse_movements > 0) perDateMed[dk].hours.add(d._t.getHours());
+    if (d.mouse_movements > 0) perDateMed[dk].hours.add(d._t.getHours());
   }
   const startsByWd = [[], [], [], [], [], [], []];
   for (const { wd, hours } of Object.values(perDateMed)) {
@@ -142,7 +142,7 @@ function buildWeekdayBars(data) {
   for (const d of data) {
     const dk = d._t.toISOString().slice(0, 10);
     if (!perDate[dk]) perDate[dk] = { wd: d._t.getDay(), hours: new Set() };
-    if (d.left_clicks + d.keypresses + d.mouse_movements > 0) {
+    if (d.mouse_movements > 0) {
       perDate[dk].hours.add(d._t.getHours());
     }
   }
@@ -182,7 +182,7 @@ function buildHeatmap(data) {
     const dk = d._t.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
     //console.log(dk);
     const h = d._t.getHours();
-    map[dk+'|'+h] = (map[dk+'|'+h]||0) + d.left_clicks + d.keypresses + d.mouse_movements;
+    map[dk+'|'+h] = (map[dk+'|'+h]||0) + d.mouse_movements;
     daySet.add(dk);
   });
 

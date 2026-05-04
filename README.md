@@ -12,9 +12,9 @@ Also this is mostly vibe coded
 
 ## To Do:
 - Make heatmap and barplot side by side. probably will need to flip the barplot axes.
-- Most likely start time
-- Most likey end time
 - Account for missed days for barplot stats
 - only keep the old necessary data.
--  ridge plot of all actiity data over all weekdays, where the x axis is day and the y axis is activity level 
+-  ridge plot of all actiity data over weeks
 -view of the heatmap should be autoscrolled to have 7 am all the way to the left
+- maybe rewrite in AppleScript
+- make mac application 
