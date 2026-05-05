@@ -12,17 +12,14 @@ async function fetchData() {
 async function init() {
   const payload = await fetchData();
   const app = document.getElementById('app');
-
   if (!payload || !payload.entries.length) {
     app.innerHTML = '<div class="loading-state"><p class="error-msg">No activity data found. Start the tracker and check back.</p></div>';
     document.getElementById('fileLabel').textContent = 'no data';
     setTimeout(init, 10000);
     return;
   }
-
   document.getElementById('fileLabel').textContent = payload.filename;
   render(payload.entries);
-
   if (!pollInterval) {
     pollInterval = setInterval(async () => {
       const fresh = await fetchData();
@@ -36,7 +33,7 @@ async function init() {
 
 function render(raw) {
   const data = raw.map(d => ({ ...d, _t: new Date(d.timestamp) })).sort((a, b) => a._t - b._t);
-  console.log(data)
+  //console.log(data)
   let totC = 0, totK = 0, totM = 0;
   for (const d of data) {totM += d.mouse_movements; }
   const totAll = totM;
@@ -176,14 +173,16 @@ function buildHeatmap(data) {
   const el = document.getElementById('heatmap');
   const map = {};
   const daySet = new Set();
+  const dayHoursSet = {};
 
   data.forEach(d => {
-    if (d._t.getDay() === 0 || d._t.getDay() === 6) return; // skip Sat (6) & Sun (0)
+    if (d._t.getDay() === 0 || d._t.getDay() === 6) return;
     const dk = d._t.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
-    //console.log(dk);
     const h = d._t.getHours();
     map[dk+'|'+h] = (map[dk+'|'+h]||0) + d.mouse_movements;
     daySet.add(dk);
+    if (!dayHoursSet[dk]) dayHoursSet[dk] = new Set();
+    if (d.mouse_movements > 0) dayHoursSet[dk].add(h);
   });
 
   const dayDate = {};
@@ -193,8 +192,15 @@ function buildHeatmap(data) {
   });
   const days = [...daySet].sort((a, b) => dayDate[b] - dayDate[a]);
   const mx = Math.max(1, ...Object.values(map));
+  const maxHrs = Math.max(1, ...days.map(dk => dayHoursSet[dk] ? dayHoursSet[dk].size : 0));
+  const N = days.length;
+
+  // Explicit rows let the spanning SVG use grid-row: 2 / -1
+  el.style.gridTemplateRows = `auto repeat(${N}, 1fr)`;
 
   const frag = document.createDocumentFragment();
+
+  // Header row
   frag.appendChild(document.createElement('div'));
   for (let h = 0; h < 24; h++) {
     const hd = document.createElement('div');
@@ -202,9 +208,15 @@ function buildHeatmap(data) {
     hd.textContent = String(h).padStart(2, '0');
     frag.appendChild(hd);
   }
+  frag.appendChild(document.createElement('div'));
+  const rHdr = document.createElement('div');
+  rHdr.className = 'rp-col-hdr';
+  rHdr.textContent = 'active hrs';
+  frag.appendChild(rHdr);
 
+  // Day rows — no cell in column 27; the SVG spans it
   days.forEach((day, i) => {
-    const age = days.length > 1 ? i / (days.length - 1) : 0;
+    const age = N > 1 ? i / (N - 1) : 0;
     const r = Math.round(0 + age * 30);
     const g = Math.round(200 - age * 140);
     const b = Math.round(5 + age * 215);
@@ -223,8 +235,80 @@ function buildHeatmap(data) {
       }
       frag.appendChild(cell);
     }
+    frag.appendChild(document.createElement('div')); // gap col
   });
 
+  // Single SVG spanning all day rows for the smooth ridge plot
+  const pts = days.map((dk, i) => {
+    const hrs = dayHoursSet[dk] ? dayHoursSet[dk].size : 0;
+    return [(hrs / maxHrs) * 96, i + 0.5];
+  });
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 100 ${N}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.style.cssText = `grid-column:27;grid-row:2/-1;width:100%;height:100%;overflow:visible;`;
+
+  const defs = document.createElementNS(ns, 'defs');
+  const mkGrad = (id, a1, a2) => {
+    const g = document.createElementNS(ns, 'linearGradient');
+    g.id = id;
+    g.setAttribute('gradientUnits', 'userSpaceOnUse');
+    g.setAttribute('x1', '0'); g.setAttribute('y1', '0');
+    g.setAttribute('x2', '0'); g.setAttribute('y2', String(N));
+    [[`0%`, `rgba(0,200,5,${a1})`], [`100%`, `rgba(30,60,220,${a2})`]].forEach(([off, col]) => {
+      const s = document.createElementNS(ns, 'stop');
+      s.setAttribute('offset', off); s.setAttribute('stop-color', col);
+      g.appendChild(s);
+    });
+    return g;
+  };
+  defs.appendChild(mkGrad('ridgeFill', 0.22, 0.22));
+  defs.appendChild(mkGrad('ridgeStroke', 0.9, 0.9));
+  svg.appendChild(defs);
+
+  // Catmull-Rom → cubic bezier; close=true wraps back to x=0 for a filled area
+  function crPath(pts, close) {
+    if (!pts.length) return '';
+    if (pts.length === 1) return close
+      ? `M0 ${pts[0][1]}L${pts[0][0]} ${pts[0][1]}L0 ${pts[0][1]}Z`
+      : `M${pts[0][0]} ${pts[0][1]}`;
+    const d = close
+      ? [`M0 ${pts[0][1]}L${pts[0][0].toFixed(2)} ${pts[0][1]}`]
+      : [`M${pts[0][0].toFixed(2)} ${pts[0][1]}`];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d.push(`C${c1x.toFixed(2)} ${c1y.toFixed(2)},${c2x.toFixed(2)} ${c2y.toFixed(2)},${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`);
+    }
+    if (close) d.push(`L0 ${pts[pts.length - 1][1]}Z`);
+    return d.join('');
+  }
+
+  const area = document.createElementNS(ns, 'path');
+  area.setAttribute('d', crPath(pts, true));
+  area.setAttribute('fill', 'url(#ridgeFill)');
+  area.setAttribute('stroke', 'none');
+  svg.appendChild(area);
+
+  const curve = document.createElementNS(ns, 'path');
+  curve.setAttribute('d', crPath(pts, false));
+  curve.setAttribute('fill', 'none');
+  curve.setAttribute('stroke', 'url(#ridgeStroke)');
+  curve.setAttribute('stroke-width', '1.5');
+  curve.setAttribute('vector-effect', 'non-scaling-stroke');
+  curve.setAttribute('stroke-linecap', 'round');
+  curve.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(curve);
+
+  frag.appendChild(svg);
   el.appendChild(frag);
 }
 

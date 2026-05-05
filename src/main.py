@@ -7,10 +7,9 @@ import os
 
 
 data = {
-    #"left_clicks": 0,
-    #"keypresses": 0,
     "mouse_movements": 0,
 }
+
 lock = Lock()
 event_count = 0
 
@@ -18,8 +17,6 @@ def save_data():
     print("Saving data to file...")
     entry = {
         "timestamp": datetime.now().isoformat(),
-        #"left_clicks": data["left_clicks"],
-        #"keypresses": data["keypresses"],
         "mouse_movements": data["mouse_movements"],
     }
 
@@ -27,8 +24,6 @@ def save_data():
         json.dump(entry, f)
         f.write("\n")
     # Reset counters after saving
-    #data["left_clicks"] = 0
-    #data["keypresses"] = 0
     data["mouse_movements"] = 0
     print("Data saved successfully.")
 
@@ -39,23 +34,11 @@ def check_save():
         save_data()
         event_count = 0
 
-# def on_click(x, y, button, pressed):
-#     if not pressed:
-#         return
-#     with lock:
-#         if button == mouse.Button.left:
-#             data["left_clicks"] += 1
-#         check_save()
-
 def on_move(x, y):
     with lock:
         data["mouse_movements"] += 1
         check_save()
 
-# def on_press(key):
-#     with lock:
-#         data["keypresses"] += 1
-#         check_save()
 save_dir = "activity_data"
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
@@ -64,13 +47,10 @@ filename = os.path.join(save_dir, f"activity_data.json")
 print(filename)
 
 mouse_listener = mouse.Listener(on_move=on_move)
-#key_listener = keyboard.Listener(on_press=on_press)
-
 mouse_listener.start()
-#key_listener.start()
 
 try:
     mouse_listener.join()
-    #key_listener.join()
+
 except KeyboardInterrupt:
     save_data()
