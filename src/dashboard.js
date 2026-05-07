@@ -308,6 +308,35 @@ function buildHeatmap(data) {
   curve.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(curve);
 
+  // Invisible hit-target rects — one per day row — for hover tooltips
+  let ridgeTip = document.getElementById('ridge-tip');
+  if (!ridgeTip) {
+    ridgeTip = document.createElement('div');
+    ridgeTip.id = 'ridge-tip';
+    document.body.appendChild(ridgeTip);
+  }
+
+  days.forEach((dk, i) => {
+    const hrs = dayHoursSet[dk] ? dayHoursSet[dk].size : 0;
+    const rect = document.createElementNS(ns, 'rect');
+    rect.setAttribute('x', '0');
+    rect.setAttribute('y', String(i));
+    rect.setAttribute('width', '100');
+    rect.setAttribute('height', '1');
+    rect.setAttribute('fill', 'transparent');
+    rect.style.cursor = 'default';
+
+    rect.addEventListener('mousemove', e => {
+      ridgeTip.textContent = `${dk} \n ${hrs} hr${hrs !== 1 ? 's' : ''}`;
+      ridgeTip.style.display = 'block';
+      ridgeTip.style.left = (e.clientX + 14) + 'px';
+      ridgeTip.style.top  = (e.clientY - 28) + 'px';
+    });
+    rect.addEventListener('mouseleave', () => { ridgeTip.style.display = 'none'; });
+
+    svg.appendChild(rect);
+  });
+
   frag.appendChild(svg);
   el.appendChild(frag);
 }

@@ -234,6 +234,15 @@
     white-space: nowrap; z-index: 20; pointer-events: none;
   }
 
+  #ridge-tip {
+    display: none;
+    position: fixed;
+    background: var(--surface-3); border: 1px solid var(--border);
+    color: var(--text); padding: 5px 10px; border-radius: 6px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    white-space: pre; z-index: 20; pointer-events: none;
+  }
+
   .loading-state { text-align: center; padding: 120px 20px; }
 
   .loading-spinner {
