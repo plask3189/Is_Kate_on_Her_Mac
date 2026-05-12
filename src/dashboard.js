@@ -3,10 +3,10 @@ let pollInterval = null;
 
 async function fetchData() {
   try {
-    const res = await fetch(API_BASE + '/api/data');
+    const res = await fetch(API_BASE + '/api/data'); // hits the local Flask server
     if (!res.ok) throw new Error('No data');
     return await res.json();
-  } catch { return null; }
+  } catch { return null; } // return null so callers can show an empty state
 }
 
 async function init() {
@@ -36,20 +36,20 @@ function render(raw) {
   //console.log(data)
   let totC = 0, totK = 0, totM = 0;
   for (const d of data) {totM += d.mouse_movements; }
-  const totAll = totM;
+  const totAll = totM; // total mouse events across all time
 
-  // Average active hours per day
+  // Active hours: per calendar date, collect the set of distinct hours with any mouse movement
   const dayHours = {};
   for (const d of data) {
-    const dk = d._t.toISOString().slice(0, 10);
+    const dk = d._t.toISOString().slice(0, 10); // "YYYY-MM-DD" key
     if (!dayHours[dk]) dayHours[dk] = new Set();
-    if (d.mouse_movements > 0) dayHours[dk].add(d._t.getHours());
+    if (d.mouse_movements > 0) dayHours[dk].add(d._t.getHours()); // one slot per hour, not a count
   }
   const dayKeys = Object.keys(dayHours);
   const totalActiveHours = dayKeys.reduce((sum, dk) => sum + dayHours[dk].size, 0);
   const avgHoursPerDay = dayKeys.length ? (totalActiveHours / dayKeys.length).toFixed(1) : '0';
-  const spanMin = Math.max(1, Math.round((data[data.length-1]._t - data[0]._t) / 60000));
-  const spanLbl = spanMin >= 60 ? (spanMin/60).toFixed(1)+'h' : spanMin+'min';
+  const spanMin = Math.max(1, Math.round((data[data.length-1]._t - data[0]._t) / 60000)); // full data window in minutes
+  const spanLbl = spanMin >= 60 ? (spanMin/60).toFixed(1)+'h' : spanMin+'min'; // human-readable duration
 
   // Median start time per weekday (Mon–Fri)
   const perDateMed = {};
@@ -58,38 +58,38 @@ function render(raw) {
     if (!perDateMed[dk]) perDateMed[dk] = { wd: d._t.getDay(), hours: new Set() };
     if (d.mouse_movements > 0) perDateMed[dk].hours.add(d._t.getHours());
   }
-  const startsByWd = [[], [], [], [], [], [], []];
+  const startsByWd = [[], [], [], [], [], [], []]; // index 0=Sun … 6=Sat
   for (const { wd, hours } of Object.values(perDateMed)) {
-    if (hours.size > 0) startsByWd[wd].push(Math.min(...hours));
+    if (hours.size > 0) startsByWd[wd].push(Math.min(...hours)); // earliest active hour that day
   }
   function medianOf(arr) {
     if (!arr.length) return null;
     const s = [...arr].sort((a, b) => a - b);
     const m = Math.floor(s.length / 2);
-    return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+    return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2; // average middle two if even length
   }
   function fmtHour(h) {
     if (h === null) return '—';
     const hr = Math.floor(h);
-    const mins = Math.round((h % 1) * 60);
+    const mins = Math.round((h % 1) * 60); // non-zero when median falls between two hours
     const ampm = hr >= 12 ? 'pm' : 'am';
-    const h12 = hr % 12 || 12;
+    const h12 = hr % 12 || 12; // convert 0 → 12
     return mins > 0 ? `${h12}:${String(mins).padStart(2,'0')}${ampm}` : `${h12}${ampm}`;
   }
   const wdNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const medianStarts = [1,2,3,4,5].map(wd => fmtHour(medianOf(startsByWd[wd])));
 
   // Total active hours for the previous 5 full weekdays (Mon–Fri)
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0); // midnight today, so "yesterday" is the last full day
   const prev5Weekdays = [];
-  const cursor = new Date(today); cursor.setDate(cursor.getDate() - 1);
+  const cursor = new Date(today); cursor.setDate(cursor.getDate() - 1); // start from yesterday
   while (prev5Weekdays.length < 5) {
     const wd = cursor.getDay();
-    if (wd !== 0 && wd !== 6) prev5Weekdays.push(cursor.toISOString().slice(0, 10));
+    if (wd !== 0 && wd !== 6) prev5Weekdays.push(cursor.toISOString().slice(0, 10)); // skip Sat/Sun
     cursor.setDate(cursor.getDate() - 1);
   }
   const prev5TotalHours = prev5Weekdays.reduce((sum, dk) => sum + (dayHours[dk] ? dayHours[dk].size : 0), 0);
-  const avgHoursPerWeekday = (prev5TotalHours / 5).toFixed(1);
+  const avgHoursPerWeekday = (prev5TotalHours / 5).toFixed(1); // always divided by 5 even if some days have no data
 
   document.getElementById('app').innerHTML = `
     <div class="hero-row anim">
@@ -216,8 +216,13 @@ function buildHeatmap(data) {
 
   // Day rows — no cell in column 27; the SVG spans it
   days.forEach((day, i) => {
-    const age = N > 1 ? i / (N - 1) : 0;
-    const r = Math.round(0 + age * 30);
+    if (day.startsWith('Mon') && i > 0) { // separator line between weeks
+      const sep = document.createElement('div');
+      sep.className = 'hm-week-sep';
+      frag.appendChild(sep);
+    }
+    const age = N > 1 ? i / (N - 1) : 0; // 0 = most recent day, 1 = oldest
+    const r = Math.round(0 + age * 30);   // color shifts green → blue as you go further back
     const g = Math.round(200 - age * 140);
     const b = Math.round(5 + age * 215);
     const lb = document.createElement('div');
@@ -229,32 +234,32 @@ function buildHeatmap(data) {
       cell.className = 'hm-cell';
       cell.setAttribute('data-tip', `${day} ${h}:00 — ${v} events`);
       if (v > 0) {
-        const intensity = v / mx;
+        const intensity = v / mx; // relative to the busiest single hour across all days
         cell.style.backgroundColor = `rgba(${r},${g},${b},${0.1+intensity*0.8})`;
-        if (intensity > 0.7) cell.style.boxShadow = `0 0 6px rgba(${r},${g},${b},${intensity*0.3})`;
+        if (intensity > 0.7) cell.style.boxShadow = `0 0 6px rgba(${r},${g},${b},${intensity*0.3})`; // glow on very busy hours
       }
       frag.appendChild(cell);
     }
-    frag.appendChild(document.createElement('div')); // gap col
+    frag.appendChild(document.createElement('div')); // gap col before ridge plot
   });
 
   // Single SVG spanning all day rows for the smooth ridge plot
   const pts = days.map((dk, i) => {
     const hrs = dayHoursSet[dk] ? dayHoursSet[dk].size : 0;
-    return [(hrs / maxHrs) * 96, i + 0.5];
+    return [(hrs / maxHrs) * 96, i + 0.5]; // x = % of max hours (capped at 96 to leave margin), y = row center
   });
 
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', `0 0 100 ${N}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.style.cssText = `grid-column:27;grid-row:2/-1;width:100%;height:100%;overflow:visible;`;
+  svg.setAttribute('viewBox', `0 0 100 ${N}`); // coordinate space: 100 wide, 1 unit per day tall
+  svg.setAttribute('preserveAspectRatio', 'none'); // stretch to fill the grid cell exactly
+  svg.style.cssText = `grid-column:27;grid-row:2/-1;width:100%;height:100%;overflow:visible;`; // spans all day rows, skips header
 
   const defs = document.createElementNS(ns, 'defs');
-  const mkGrad = (id, a1, a2) => {
+  const mkGrad = (id, a1, a2) => { // vertical gradient matching the row color scheme (green top → blue bottom)
     const g = document.createElementNS(ns, 'linearGradient');
     g.id = id;
-    g.setAttribute('gradientUnits', 'userSpaceOnUse');
+    g.setAttribute('gradientUnits', 'userSpaceOnUse'); // coords in SVG space, not 0–1
     g.setAttribute('x1', '0'); g.setAttribute('y1', '0');
     g.setAttribute('x2', '0'); g.setAttribute('y2', String(N));
     [[`0%`, `rgba(0,200,5,${a1})`], [`100%`, `rgba(30,60,220,${a2})`]].forEach(([off, col]) => {
@@ -264,31 +269,31 @@ function buildHeatmap(data) {
     });
     return g;
   };
-  defs.appendChild(mkGrad('ridgeFill', 0.22, 0.22));
-  defs.appendChild(mkGrad('ridgeStroke', 0.9, 0.9));
+  defs.appendChild(mkGrad('ridgeFill', 0.22, 0.22)); // low alpha so cells show through
+  defs.appendChild(mkGrad('ridgeStroke', 0.9, 0.9)); // high alpha for the visible line
   svg.appendChild(defs);
 
   // Catmull-Rom → cubic bezier; close=true wraps back to x=0 for a filled area
   function crPath(pts, close) {
     if (!pts.length) return '';
-    if (pts.length === 1) return close
+    if (pts.length === 1) return close // degenerate case: single point draws a flat triangle
       ? `M0 ${pts[0][1]}L${pts[0][0]} ${pts[0][1]}L0 ${pts[0][1]}Z`
       : `M${pts[0][0]} ${pts[0][1]}`;
     const d = close
-      ? [`M0 ${pts[0][1]}L${pts[0][0].toFixed(2)} ${pts[0][1]}`]
+      ? [`M0 ${pts[0][1]}L${pts[0][0].toFixed(2)} ${pts[0][1]}`] // start at left edge, move to first point
       : [`M${pts[0][0].toFixed(2)} ${pts[0][1]}`];
     for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[Math.max(0, i - 1)];
+      const p0 = pts[Math.max(0, i - 1)]; // clamp to first point when at the start
       const p1 = pts[i];
       const p2 = pts[i + 1];
-      const p3 = pts[Math.min(pts.length - 1, i + 2)];
-      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const p3 = pts[Math.min(pts.length - 1, i + 2)]; // clamp to last point when at the end
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6; // control point formula from Catmull-Rom conversion
       const c1y = p1[1] + (p2[1] - p0[1]) / 6;
       const c2x = p2[0] - (p3[0] - p1[0]) / 6;
       const c2y = p2[1] - (p3[1] - p1[1]) / 6;
       d.push(`C${c1x.toFixed(2)} ${c1y.toFixed(2)},${c2x.toFixed(2)} ${c2y.toFixed(2)},${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`);
     }
-    if (close) d.push(`L0 ${pts[pts.length - 1][1]}Z`);
+    if (close) d.push(`L0 ${pts[pts.length - 1][1]}Z`); // close back to left edge to form the filled shape
     return d.join('');
   }
 
